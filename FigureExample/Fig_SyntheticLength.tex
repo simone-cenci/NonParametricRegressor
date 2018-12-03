@@ -1,0 +1,52 @@
+\documentclass{standalone}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.13}
+\usepackage{tikz, tikz-3dplot}
+\usepackage{pgfplotstable}
+\usetikzlibrary{shapes.misc}
+\usetikzlibrary{shapes.geometric}
+\usetikzlibrary{shapes}
+\usetikzlibrary{arrows,positioning}
+\usetikzlibrary{calc}
+\usepackage{graphicx}
+\usepgfplotslibrary{statistics}
+\usepgfplotslibrary{fillbetween}
+%%%%%%%% Variables
+\newcommand{\errortypetrain}{\vartrain}
+\newcommand{\errortypetest}{\vartest}
+\newcommand{\errortypetrainLO}{\vartrainLO}
+\newcommand{\errortypetestLO}{\vartestLO}
+%%%%%%%%
+\newcommand*\circled[1]{\tikz[baseline=(char.base)]{
+            \node[shape=ellipse,draw,inner sep=0.5pt] (char) {#1};}}
+\pgfplotsset{select coords between index/.style 2 args={
+    x filter/.code={
+        \ifnum\coordindex<#1\def\pgfmathresult{}\fi
+        \ifnum\coordindex>#2\def\pgfmathresult{}\fi
+    }
+}}
+
+
+\newcommand{\errorband}[6]{
+\pgfplotstableread{#1}\datatable
+  \addplot [name path=pluserror,draw=none,no markers,forget plot]
+    table [x={#2},y expr=\thisrow{#3}+\thisrow{#4}] {\datatable};
+
+  \addplot [name path=minuserror,draw=none,no markers,forget plot]
+    table [x={#2},y expr=\thisrow{#3}-\thisrow{#4}] {\datatable};
+
+  \addplot [forget plot,fill=#5,opacity=#6]
+    fill between[on layer={},of=pluserror and minuserror];
+
+  \addplot [#5,thick,no markers, line width = 1.5pt]
+    table [x={#2},y={#3}] {\datatable};
+}
+
+\begin{document}
+
+
+\begin{tabular}{cc}
+\centering
+\input{training_synt_length} & \input{testing_synt_length}
+\end{tabular}
+\end{document}

@@ -1,0 +1,22 @@
+\begin{tikzpicture}
+\begin{axis}[
+      title = {\bf \Large Test Set},
+      clip  = true,
+      scaled y ticks=false,
+      scaled x ticks=false,
+      enlarge y limits = false,
+      enlarge x limits = false,
+      ylabel style={align=center},
+      ylabel = RMSE,ymin = 0,ymax = 14,
+      xlabel= Data Size,
+      legend cell align={left},
+      legend style={at={(axis cs:8,0.5)},anchor=south west, draw = none, fill = none, font=\fontsize{8}{10}\selectfont}, 
+]
+\errorband{./../output/constant.txt}{0}{3}{4}{cyan}{0.4}	
+\errorband{./../output/linear.txt}{0}{3}{4}{blue}{0.4}	
+\errorband{./../output/kernel.txt}{0}{3}{4}{red}{0.4}	
+\errorband{./../output/tree.txt}{0}{3}{4}{green}{0.4}	
+\errorband{./../output/forest.txt}{0}{3}{4}{teal}{0.4}	
+\end{axis}
+\end{tikzpicture}
+
