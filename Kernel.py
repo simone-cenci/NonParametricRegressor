@@ -50,10 +50,10 @@ def CV(object, predictors, target, regularization_path, realization):
 	return(optimum_lmb, optimum_tht, rmse, min_val_error)
 
 
-def variable_selection(XTrain, YTrain, reg_path):
+def variable_selection(x_Train, y_Train, reg_path):
 	ftr = []
 	feature_selection_error = []
-	features = [j for j in range(XTrain.shape[1])]
+	features = [j for j in range(x_Train.shape[1])]
 	for i in range(len(features)):
 		if len(ftr) != 0:
 			features.remove(features[idx])
@@ -64,18 +64,18 @@ def variable_selection(XTrain, YTrain, reg_path):
 				subset = list(ftr[i-1] + [k])
 			else:
 				subset = [k]
-			RXTrain = XTrain[:,subset]
+			R_x_Train = x_Train[:,subset]
 			### Run cross validation
-			best_lmb, best_tht, err, validation_error = CV(KernelRegression, RXTrain, YTrain, reg_path, 20)
+			best_lmb, best_tht, err, validation_error = CV(KernelRegression, R_x_Train, y_Train, reg_path, 20)
 			val_err.append(validation_error)
 			sbs.append(subset)
 		idx = np.argmin(val_err)
 		ftr.append(sbs[idx])
 		feature_selection_error.append(min(val_err))
-	best_feature = ftr[np.argmin(feature_selection_error)]
-	return(best_feature)
+	best_predictors = ftr[np.argmin(feature_selection_error)]
+	return(best_predictors)
 
-def output_kernel_model(XTrain, XTest, YTrain,YTest, plot = False, AllFeatures = False):
+def output_kernel_model(XTrain, XTest, YTrain,YTest, AllFeatures = False):
 	#### Standardize the variables but preserve the information so that you can use it later to report the error in the true space
 	scaler_ts_training_X = preprocessing.StandardScaler().fit(XTrain)
 	scaler_ts_training_Y = preprocessing.StandardScaler().fit(YTrain.reshape(-1,1))
@@ -88,6 +88,8 @@ def output_kernel_model(XTrain, XTest, YTrain,YTest, plot = False, AllFeatures =
 	if AllFeatures == False:
 		best_feature = variable_selection(XTrain, YTrain, reg_path)
 		XTrain = XTrain[:,best_feature]
+	else:
+		best_feature = [j for j in range(XTrain.shape[1])]
 	best_lmb, best_tht, err, validation_error = CV(KernelRegression, XTrain, YTrain, reg_path, 50)
 	### Training error
 	r = KernelRegression(best_lmb, best_tht)
@@ -107,7 +109,8 @@ def output_kernel_model(XTrain, XTest, YTrain,YTest, plot = False, AllFeatures =
 	### Print results
 	print('training error:', training_error)
 	print('test error:', test_error)
-	return(training_error,test_error)
+	return(training_error,test_error, best_feature)
+
 if __name__ == '__main__':
 	np.random.seed(5)
 	tmp = np.loadtxt('Input/synthetic_data.txt')
@@ -115,4 +118,5 @@ if __name__ == '__main__':
 	target = tmp[0:100,0]
 	###
 	XTrain, XTest, YTrain, YTest = train_test_split(df, target, test_size=0.2)
-	output_kernel_model(XTrain, XTest, YTrain,YTest)
+	train_error, tst_error, predictors = output_kernel_model(XTrain, XTest, YTrain,YTest)
+	print(predictors)

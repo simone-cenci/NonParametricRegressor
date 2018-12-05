@@ -6,20 +6,25 @@ import pandas
 from sklearn.model_selection import ParameterGrid
 
 
-def CV(XTrain,YTrain, para):
-	err = []
+def CV(XTrain,YTrain, para, num_iterations):
+	val_iterations = []
 	for hyper in range(len(para)):
-		X_train, X_val, y_train, y_val = train_test_split(XTrain, YTrain, test_size=0.2)
-		regr_forest = RandomForestRegressor(max_depth = para[hyper]['depth'], min_samples_split = para[hyper]['split'], min_samples_leaf = para[hyper]['leaf'])
-		regr_forest.fit(X_train,y_train)
-		y_pred = regr_forest.predict(X_val)
-		err.append(np.sqrt(np.mean((y_val - y_pred)**2)))
-	val_error = err[np.argmin(err)]
-	return(err, val_error)
+		err = []
+		for realization in range(num_iterations):
+			X_train, X_val, y_train, y_val = train_test_split(XTrain, YTrain, test_size=0.2)
+			regr_1 = RandomForestRegressor(max_depth = para[hyper]['depth'], min_samples_split = para[hyper]['split'], min_samples_leaf = para[hyper]['leaf'])
+			regr_1.fit(X_train,y_train)
+			y_pred = regr_1.predict(X_val)
+			err.append(np.sqrt(np.mean((y_val - y_pred)**2)))
+		val_iterations.append(np.mean(err))
+	val_error = min(val_iterations)
+	return(val_iterations, val_error)
+
+
 def output_regression_forest(XTrain, YTrain, XTest, YTest):
 	param_grid = {'depth': [2, 4, 8, 16], 'split': [2, 3, 5, 8, 10, 12], 'leaf': [1, 3, 5, 8,  10, 12]}
 	reg_path = list(ParameterGrid(param_grid))
-	err, val_err = CV(XTrain, YTrain, reg_path)
+	err, val_err = CV(XTrain, YTrain, reg_path, 5)
 	idx = np.argmin(err)
 	regr_tree = RandomForestRegressor(max_depth = reg_path[idx]['depth'], min_samples_split = reg_path[idx]['split'], min_samples_leaf = reg_path[idx]['leaf'])
 	regr_tree.fit(XTrain,YTrain)

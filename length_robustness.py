@@ -44,7 +44,7 @@ if __name__ == '__main__':
 				train_it.append(training_)
 				test_it.append(testing_)
 			if model == 'kernel':
-				training_, testing_ = output_kernel_model(XTrain, XTest, YTrain, YTest)
+				training_, testing_, predictors = output_kernel_model(XTrain, XTest, YTrain, YTest)
 				train_it.append(training_)
 				test_it.append(testing_)
 			if model == 'tree':

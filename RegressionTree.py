@@ -6,16 +6,19 @@ import pandas
 from sklearn.model_selection import ParameterGrid
 
 
-def CV(XTrain,YTrain, para):
-	err = []
+def CV(XTrain,YTrain, para, num_iterations):
+	val_iterations = []
 	for hyper in range(len(para)):
-		X_train, X_val, y_train, y_val = train_test_split(XTrain, YTrain, test_size=0.2)
-		regr_1 = DecisionTreeRegressor(max_depth = para[hyper]['depth'], min_samples_split = para[hyper]['split'], min_samples_leaf = para[hyper]['leaf'])
-		regr_1.fit(X_train,y_train)
-		y_pred = regr_1.predict(X_val)
-		err.append(np.sqrt(np.mean((y_val - y_pred)**2)))
-	val_error = err[np.argmin(err)]
-	return(err, val_error)
+		err = []
+		for realization in range(num_iterations):
+			X_train, X_val, y_train, y_val = train_test_split(XTrain, YTrain, test_size=0.2)
+			regr_1 = DecisionTreeRegressor(max_depth = para[hyper]['depth'], min_samples_split = para[hyper]['split'], min_samples_leaf = para[hyper]['leaf'])
+			regr_1.fit(X_train,y_train)
+			y_pred = regr_1.predict(X_val)
+			err.append(np.sqrt(np.mean((y_val - y_pred)**2)))
+		val_iterations.append(np.mean(err))
+	val_error = min(val_iterations)
+	return(val_iterations, val_error)
 
 def variable_selection(XTrain, YTrain, reg_path):
 	ftr = []
@@ -33,7 +36,7 @@ def variable_selection(XTrain, YTrain, reg_path):
 				subset = [k]
 			RXTrain = XTrain[:,subset]
 			### Run cross validation
-			err, validation_error = CV(RXTrain, YTrain, reg_path)
+			err, validation_error = CV(RXTrain, YTrain, reg_path, 5)
 			val_err.append(validation_error)
 			sbs.append(subset)
 		idx = np.argmin(val_err)
@@ -49,7 +52,7 @@ def output_regression_tree(XTrain, YTrain, XTest, YTest, AllFeatures = False):
 	if AllFeatures == False:
 		best_feature = variable_selection(XTrain, YTrain, reg_path)
 		XTrain = XTrain[:,best_feature]
-	err, val_err = CV(XTrain, YTrain, reg_path)
+	err, val_err = CV(XTrain, YTrain, reg_path, 5)
 	idx = np.argmin(err)
 	regr_tree = DecisionTreeRegressor(max_depth = reg_path[idx]['depth'], min_samples_split = reg_path[idx]['split'], min_samples_leaf = reg_path[idx]['leaf'])
 	regr_tree.fit(XTrain,YTrain)
