@@ -1,9 +1,14 @@
+#%%
 import numpy as np
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 import pandas
 from sklearn.model_selection import ParameterGrid
+import scipy.stats as stats
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=UserWarning)
 
 
 def CV(XTrain,YTrain, para, num_iterations):
@@ -45,13 +50,15 @@ def variable_selection(XTrain, YTrain, reg_path):
 	best_feature = ftr[np.argmin(feature_selection_error)]
 	return(best_feature)
 
-def output_regression_tree(XTrain, YTrain, XTest, YTest, AllFeatures = False):
+def output_regression_tree(XTrain, YTrain, XTest, AllFeatures = False):
 	param_grid = {'depth': [2, 4, 8, 16, 32, 64, 128], 'split': [10, 30, 50, 70, 90, 100], 'leaf': [1, 5, 10, 20, 40, 80]}
 	reg_path = list(ParameterGrid(param_grid))
 	#### Greedy search for features
 	if AllFeatures == False:
+		print('Greedy feature selection ...')
 		best_feature = variable_selection(XTrain, YTrain, reg_path)
 		XTrain = XTrain[:,best_feature]
+		print('Selected feature:', best_feature)
 	err, val_err = CV(XTrain, YTrain, reg_path, 5)
 	idx = np.argmin(err)
 	regr_tree = DecisionTreeRegressor(max_depth = reg_path[idx]['depth'], min_samples_split = reg_path[idx]['split'], min_samples_leaf = reg_path[idx]['leaf'])
@@ -61,20 +68,29 @@ def output_regression_tree(XTrain, YTrain, XTest, YTest, AllFeatures = False):
 	# Predict
 	if AllFeatures == False:
 		XTest = XTest[:,best_feature]
-	y_1 = regr_tree.predict(XTest)
-	test_err = (np.sqrt(((YTest - y_1)**2).mean()))
-	print('Training error:', train_error)
-	print('Test error:', test_err)
+	Y_pred = regr_tree.predict(XTest)
 
-	return(train_error, test_err)
+	print('Training error:', train_error)
+
+
+	return(train_error, Y_pred)
+def compute_error_measures(YT, YP):
+	rmse_ = np.sqrt(np.mean((YT-YP)**2))
+	rho = stats.pearsonr(YT, YP)[0]
+	R2 = rho**2
+	return(rmse_, rho, R2)
 
 
 
 if __name__ == '__main__':
 	np.random.seed(5)
 	tmp = np.loadtxt('Input/synthetic_data.txt')
-	length_to_take = 100
+	length_to_take = 300
 	df = tmp[0:length_to_take,1:np.shape(tmp)[1]]
 	target = tmp[0:length_to_take,0]
-	XTrain, XTest, YTrain, YTest = train_test_split(df, target, test_size=0.1)
-	train_err, test_err = output_regression_tree(XTrain, YTrain, XTest, YTest, AllFeatures = True)
+	XTrain, XTest, YTrain, YTest = train_test_split(df, target, test_size=0.2)
+	train_err, Y_pred = output_regression_tree(XTrain, YTrain, XTest, AllFeatures = True)
+	rmse_, rho, R2 = compute_error_measures(YTest, Y_pred)
+	print('R2:', R2, \
+		'\nRMSE:', rmse_)
+	plt.scatter(YTest,Y_pred)

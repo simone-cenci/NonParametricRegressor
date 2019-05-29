@@ -6,6 +6,7 @@ from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 import pandas
 from sklearn.model_selection import ParameterGrid
+import scipy.stats as stats
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
@@ -25,7 +26,7 @@ def CV(XTrain,YTrain, para, num_iterations):
 	return(val_iterations, val_error)
 
 
-def output_regression_forest(XTrain, YTrain, XTest, YTest):
+def output_regression_forest(XTrain, YTrain, XTest):
 	param_grid = {'depth': [2, 4, 8, 16], 'split': [2, 3, 5, 8, 10, 12], 'leaf': [1, 3, 5, 8,  10, 12]}
 	reg_path = list(ParameterGrid(param_grid))
 	err, val_err = CV(XTrain, YTrain, reg_path, 5)
@@ -36,20 +37,27 @@ def output_regression_forest(XTrain, YTrain, XTest, YTest):
 	train_error = (np.sqrt(np.mean((YTrain - y_pred)**2)))
 	# Predict
 	y_1 = regr_tree.predict(XTest)
-	test_err = (np.sqrt(((YTest - y_1)**2).mean()))
+
 	print('Training error:', train_error)
-	print('Test error:', test_err)
 
-	return(train_error, test_err, y_1)
-
+	return(train_error, y_1)
+def compute_error_measures(YT, YP):
+	rmse_ = np.sqrt(np.mean((YT-YP)**2))
+	rho = stats.pearsonr(YT, YP)[0]
+	R2 = rho**2
+	return(rmse_, rho, R2)
 
 
 if __name__ == '__main__':
+	np.random.seed(5)
 	tmp = np.loadtxt('Input/synthetic_data.txt')
 	length_to_take = 300
 	df = tmp[0:length_to_take,1:np.shape(tmp)[1]]
 	target = tmp[0:length_to_take,0]
 	XTrain, XTest, YTrain, YTest = train_test_split(df, target, test_size=0.2)
-	train_err, test_err, Y_pred = output_regression_forest(XTrain, YTrain, XTest, YTest)
+	train_err,  Y_pred = output_regression_forest(XTrain, YTrain, XTest)
 
+	rmse_, rho, R2 = compute_error_measures(YTest, Y_pred)
+	print('R2:', R2, \
+		'\nRMSE:', rmse_)
 	plt.scatter(YTest,Y_pred)

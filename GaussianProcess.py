@@ -6,6 +6,7 @@ from sklearn.gaussian_process.kernels import RBF, Matern, DotProduct, Sum, Const
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 from sklearn.model_selection import ParameterGrid
+import scipy.stats as stats
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
@@ -70,7 +71,7 @@ def variable_selection(x_Train, y_Train, reg_path):
 	best_predictors = ftr[np.argmin(feature_selection_error)]
 	return(best_predictors)
 
-def output_GP(XTrain, XTest, YTrain,YTest, AllFeatures = False):
+def output_GP(XTrain, XTest, YTrain,AllFeatures = False):
 	#### Standardize the variables but preserve the information so that you can use it later to report the error in the true space
 	scaler_ts_training_X = preprocessing.StandardScaler().fit(XTrain)
 	scaler_ts_training_Y = preprocessing.StandardScaler().fit(YTrain.reshape(-1,1))
@@ -81,8 +82,10 @@ def output_GP(XTrain, XTest, YTrain,YTest, AllFeatures = False):
 	reg_path = list(ParameterGrid(reg_path))
 	#### Greedy search for features
 	if AllFeatures == False:
+		print('Greedy feature selection ...')
 		best_feature = variable_selection(XTrain, YTrain, reg_path)
 		XTrain = XTrain[:,best_feature]
+		print('Selected feature:', best_feature)
 	else:
 		best_feature = [j for j in range(XTrain.shape[1])]
 	best_krn, best_l, err, validation_error = CV(GaussProc, XTrain, YTrain, reg_path, 50)
@@ -99,20 +102,25 @@ def output_GP(XTrain, XTest, YTrain,YTest, AllFeatures = False):
 		XTest = XTest[:,best_feature]
 	Ypred, sigma_pred = r.predict(gpr,XTest)
 	Ypred = scaler_ts_training_Y.inverse_transform(Ypred.reshape(1,-1))
-	test_error = r.RMSE(YTest,Ypred)
 	### Print results
 	print('training error:', training_error)
-	print('test error:', test_error)
-	return(training_error,test_error, best_feature, np.squeeze(Ypred), sigma_pred)
-
+	return(training_error, best_feature, np.squeeze(Ypred), sigma_pred)
+def compute_error_measures(YT, YP):
+	rmse_ = np.sqrt(np.mean((YT-YP)**2))
+	rho = stats.pearsonr(YT, YP)[0]
+	R2 = rho**2
+	return(rmse_, rho, R2)
 #%%
 if __name__ == '__main__':
+	np.random.seed(5)
 	tmp = np.loadtxt('Input/synthetic_data.txt')
 	to_take = 300
 	df = tmp[0:to_take,1:(np.shape(tmp)[1])]
 	target = tmp[0:to_take,0]
 	###
 	XTrain, XTest, YTrain, YTest = train_test_split(df, target, test_size=0.2)
-	train_error, tst_error, predictors, Y_pred, sigma_pred = output_GP(XTrain, XTest, YTrain,YTest, AllFeatures =True)
-
+	train_error, predictors, Y_pred, sigma_pred = output_GP(XTrain, XTest, YTrain, AllFeatures =True)
+	rmse_, rho, R2 = compute_error_measures(YTest, Y_pred)
+	print('R2:', R2, \
+		'\nRMSE:', rmse_)
 	plt.scatter(YTest,Y_pred)
