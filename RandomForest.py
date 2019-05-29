@@ -1,10 +1,14 @@
+#%%
 import numpy as np
+import matplotlib.pylab as plt
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 import pandas
 from sklearn.model_selection import ParameterGrid
-
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=UserWarning)
 
 def CV(XTrain,YTrain, para, num_iterations):
 	val_iterations = []
@@ -36,16 +40,16 @@ def output_regression_forest(XTrain, YTrain, XTest, YTest):
 	print('Training error:', train_error)
 	print('Test error:', test_err)
 
-	return(train_error, test_err)
+	return(train_error, test_err, y_1)
 
 
 
 if __name__ == '__main__':
-	np.random.seed(5)
 	tmp = np.loadtxt('Input/synthetic_data.txt')
 	length_to_take = 300
 	df = tmp[0:length_to_take,1:np.shape(tmp)[1]]
 	target = tmp[0:length_to_take,0]
-	XTrain, XTest, YTrain, YTest = train_test_split(df, target, test_size=0.1)
-	train_err, test_err = output_regression_forest(XTrain, YTrain, XTest, YTest)
+	XTrain, XTest, YTrain, YTest = train_test_split(df, target, test_size=0.2)
+	train_err, test_err, Y_pred = output_regression_forest(XTrain, YTrain, XTest, YTest)
 
+	plt.scatter(YTest,Y_pred)

@@ -77,4 +77,4 @@ if __name__ == '__main__':
 	df = tmp[0:length_to_take,1:np.shape(tmp)[1]]
 	target = tmp[0:length_to_take,0]
 	XTrain, XTest, YTrain, YTest = train_test_split(df, target, test_size=0.1)
-	train_err, test_err = output_regression_tree(XTrain, YTrain, XTest, YTest)
+	train_err, test_err = output_regression_tree(XTrain, YTrain, XTest, YTest, AllFeatures = True)

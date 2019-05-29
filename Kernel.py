@@ -1,5 +1,6 @@
 #%%
 import numpy as np
+import matplotlib.pylab as plt
 from sklearn.kernel_ridge import KernelRidge
 from sklearn.gaussian_process.kernels import RBF, Matern, DotProduct, Sum, ConstantKernel
 from sklearn.model_selection import train_test_split
@@ -104,10 +105,10 @@ def output_RKHS(XTrain, XTest, YTrain,YTest, AllFeatures = False):
 
 #%%
 if __name__ == '__main__':
-	np.random.seed(5)
 	tmp = np.loadtxt('Input/synthetic_data.txt')
-	df = tmp[0:100,1:(np.shape(tmp)[1])]
-	target = tmp[0:100,0]
+	to_take = 300
+	df = tmp[0:to_take,1:(np.shape(tmp)[1])]
+	target = tmp[0:to_take,0]
 	###
 	XTrain, XTest, YTrain, YTest = train_test_split(df, target, test_size=0.2)
 	train_error, tst_error, predictors, Y_pred = output_RKHS(XTrain, XTest, YTrain,YTest, AllFeatures =True)
