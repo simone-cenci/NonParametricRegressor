@@ -6,6 +6,9 @@ from sklearn.gaussian_process.kernels import RBF, Matern, DotProduct, Sum, Const
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 from sklearn.model_selection import ParameterGrid
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+warnings.simplefilter(action='ignore', category=UserWarning)
 #%%
 class GaussProc:
 	def __init__(self, krn):
