@@ -28,6 +28,7 @@ def CV(XTrain,YTrain, para, num_iterations):
 	return(val_iterations, val_error)
 
 
+### This is a regression forest
 def output_regression_forest(XTrain, YTrain, XTest, costumCV = False):
     if costumCV:   #### Simple cross validation
         param_grid = {'depth': [2, 4, 8, 16], 'split': [2, 3, 5, 8, 10, 12], 'leaf': [1, 3, 5, 8,  10, 12]}
@@ -56,7 +57,7 @@ def output_regression_forest(XTrain, YTrain, XTest, costumCV = False):
     return(y_1)
 
 
-
+### This is a classifier forest
 def output_classifier_forest(XTrain, YTrain, XTest):
 
     param_grid = \
