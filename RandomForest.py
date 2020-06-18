@@ -1,7 +1,7 @@
 #%%
 import numpy as np
 import matplotlib.pylab as plt
-from sklearn.ensemble import RandomForestRegressor
+from sklearn.ensemble import RandomForestRegressor, RandomForestClassifier
 from sklearn.model_selection import train_test_split
 from sklearn import preprocessing
 import pandas
@@ -10,6 +10,8 @@ import scipy.stats as stats
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
 warnings.simplefilter(action='ignore', category=UserWarning)
+from sklearn.model_selection import RandomizedSearchCV
+
 
 def CV(XTrain,YTrain, para, num_iterations):
 	val_iterations = []
@@ -26,38 +28,80 @@ def CV(XTrain,YTrain, para, num_iterations):
 	return(val_iterations, val_error)
 
 
-def output_regression_forest(XTrain, YTrain, XTest):
-	param_grid = {'depth': [2, 4, 8, 16], 'split': [2, 3, 5, 8, 10, 12], 'leaf': [1, 3, 5, 8,  10, 12]}
-	reg_path = list(ParameterGrid(param_grid))
-	err, val_err = CV(XTrain, YTrain, reg_path, 5)
-	idx = np.argmin(err)
-	regr_tree = RandomForestRegressor(max_depth = reg_path[idx]['depth'], min_samples_split = reg_path[idx]['split'], min_samples_leaf = reg_path[idx]['leaf'])
-	regr_tree.fit(XTrain,YTrain)
-	y_pred = regr_tree.predict(XTrain)
-	train_error = (np.sqrt(np.mean((YTrain - y_pred)**2)))
-	# Predict
-	y_1 = regr_tree.predict(XTest)
+def output_regression_forest(XTrain, YTrain, XTest, costumCV = False):
+    if costumCV:   #### Simple cross validation
+        param_grid = {'depth': [2, 4, 8, 16], 'split': [2, 3, 5, 8, 10, 12], 'leaf': [1, 3, 5, 8,  10, 12]}
+        reg_path = list(ParameterGrid(param_grid))
+        err, val_err = CV(XTrain, YTrain, reg_path, 5)
+        idx = np.argmin(err)
+        regr_tree = RandomForestRegressor(max_depth = reg_path[idx]['depth'], min_samples_split = reg_path[idx]['split'], min_samples_leaf = reg_path[idx]['leaf'])
+        regr_tree.fit(XTrain,YTrain)
+        y_1 = regr_tree.predict(XTest)
+   
+    else:       ### Random Search
+        param_grid = \
+        {'bootstrap': [True, False],
+         'max_depth': [4, 8, 16, 32, 64, None],
+         'max_features': ['auto', 'sqrt'],
+         'min_samples_leaf': [1, 2, 4],
+         'min_samples_split': [2, 5, 10],
+         'n_estimators': [50, 100, 150, 200]}
+        rf = RandomForestRegressor()
+        rf_random = RandomizedSearchCV(estimator = rf, param_distributions = param_grid, \
+        n_iter = 50, cv = 3, \
+        verbose=0, random_state=5)      
+        rf_random.fit(XTrain, YTrain)
+        y_1 = rf_random.best_estimator_.predict(XTest)            
 
-	print('Training error:', train_error)
+    return(y_1)
 
-	return(train_error, y_1)
+
+
+def output_classifier_forest(XTrain, YTrain, XTest):
+
+    param_grid = \
+    {'bootstrap': [True, False],
+     'max_depth': [4, 8, 16, 32, 64, None],
+     'max_features': ['auto', 'sqrt'],
+     'min_samples_leaf': [1, 2, 4],
+     'min_samples_split': [2, 5, 10],
+     'n_estimators': [50, 100, 150, 200]}
+    rf = RandomForestClassifier()
+    rf_random = RandomizedSearchCV(estimator = rf, param_distributions = param_grid, \
+    n_iter = 50, cv = 3, \
+    verbose=0, random_state=5)      
+    rf_random.fit(XTrain, YTrain)
+    y_1 = rf_random.best_estimator_.predict(XTest)            
+
+    return(rf_random.best_estimator_, y_1)
+
+
 def compute_error_measures(YT, YP):
 	rmse_ = np.sqrt(np.mean((YT-YP)**2))
 	rho = stats.pearsonr(YT, YP)[0]
 	R2 = rho**2
 	return(rmse_, rho, R2)
 
-
+#%%
 if __name__ == '__main__':
-	np.random.seed(5)
-	tmp = np.loadtxt('Input/synthetic_data.txt')
-	length_to_take = 300
-	df = tmp[0:length_to_take,1:np.shape(tmp)[1]]
-	target = tmp[0:length_to_take,0]
-	XTrain, XTest, YTrain, YTest = train_test_split(df, target, test_size=0.2)
-	train_err,  Y_pred = output_regression_forest(XTrain, YTrain, XTest)
+    
+    ### Generate a nonlinear model
+    Z = np.random.normal(0,1,size = (200,3))   
+    T = Z[:,0] + Z[:,1]**2/Z[:,2]
+    
+    ### Split data in training and testing
+    XTrain, XTest, YTrain, YTest = train_test_split(Z, T, test_size=0.2)
 
-	rmse_, rho, R2 = compute_error_measures(YTest, Y_pred)
-	print('R2:', R2, \
-		'\nRMSE:', rmse_)
-	plt.scatter(YTest,Y_pred)
+    ## test two different cross-validation schemes
+    ### Type 1 (random features selection). This is significantly faster than the next one
+    Y_pred = output_regression_forest(XTrain, YTrain, XTest, costumCV = False)  
+    rmse_, rho, R2 = compute_error_measures(YTest, Y_pred)
+    print('R2:', R2, \
+    	'\nRMSE:', rmse_,
+        '\n#####')
+
+    ### Type 2
+    Y_pred = output_regression_forest(XTrain, YTrain, XTest, costumCV = True)  
+    rmse_, rho, R2 = compute_error_measures(YTest, Y_pred)
+    print('R2:', R2, \
+    	'\nRMSE:', rmse_)
